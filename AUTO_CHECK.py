@@ -1,19 +1,10 @@
 import streamlit as st
 import pandas as pd
-from docx import Document
 from openpyxl import load_workbook
 import requests
 from bs4 import BeautifulSoup
 import time
-from datetime import datetime
-import sys
 import re
-import os
-import tempfile
-import tkinter as tk
-from tkinter import filedialog
-import plotly.express as px
-
 
 # 设置网页标题，以及使用宽屏模式
 st.set_page_config(
