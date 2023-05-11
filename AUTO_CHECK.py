@@ -12,6 +12,11 @@ st.set_page_config(
     layout="wide"
 
 )
+#放气球
+if 'first_visit' not in st.session_state:
+    st.session_state.first_visit=True
+    #此处可初始化全局变量
+    st.balloons()
 # 隐藏右边的菜单以及页脚
 hide_streamlit_style = """
 <style>
