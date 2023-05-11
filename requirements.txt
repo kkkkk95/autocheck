@@ -70,7 +70,6 @@ matplotlib==3.4.0
 mccabe==0.6.1
 mdurl==0.1.2
 mistune==0.8.4
-QR==2.3.1
 mysql-connector-python==8.0.32
 mysqlclient==2.1.1
 notebook==6.3.0
