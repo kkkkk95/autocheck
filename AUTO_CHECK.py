@@ -268,5 +268,5 @@ if sidebar == "ETOPS检测":
     left_column.markdown("step1：打开开始菜单选择anaconda3(64-bit)文件夹中的任意终端")
     left_column.image(r"image/step1.png")
     right_column.markdown("step2：复制粘贴指令'streamlit run AUTO_CHECK.py'")
-    right_column.image(r"image/step1.png")
+    right_column.image(r"image/step2.png")
     
