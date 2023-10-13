@@ -71,9 +71,9 @@ class analyze:
                     deviation_wxnum+=1
             if dataline['异常类型']=='盘旋等待':
                 if '管制指挥' in rmk:
-                    circle_wxnum+=1
-                if '天气' in rmk:
                     circle_atcnum+=1
+                if '天气' in rmk:
+                    circle_wxnum+=1
             if dataline['异常类型']=='复飞':
                 if '正在核实' in rmk:
                     pass
