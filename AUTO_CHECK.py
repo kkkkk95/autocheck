@@ -7,6 +7,9 @@ import time
 import sys
 import re
 import datetime
+from DrissionPage import ChromiumOptions
+from ddddocr import DdddOcr
+from DrissionPage import WebPage, ChromiumOptions, SessionOptions
 
 # 设置网页标题，以及使用宽屏模式
 st.set_page_config(
@@ -112,7 +115,202 @@ class analyze:
         ,altline
         )
         return outline_
+#除冰
+class antice:
+    def __init__(self):
+        self.do = ChromiumOptions(ini_path=r'.\configs.ini')
+        self.so = SessionOptions(ini_path=r'.\configs.ini')
+        self.page = WebPage(driver_or_options=self.do, session_or_options=self.so)
+    
+    def login(self):
+        # 登录
+        # 定位到账号
+        self.page.ele('#userInput').input('15201235424')
+        # 定位到密码
+        self.page.ele('#passwordInput').input('AOCdtjk2023')
+        # 定位验证码图片
+        img = self.page('tag:img').get_src()
+        with open (r'验证码\img.png', "wb") as f:
+            f.write(img)
+        with open(r'验证码\img.png', 'rb') as f:
+            img_bytes = f.read()
+            result = DdddOcr().classification(img_bytes)
+        # 输入验证码
+        self.page.ele('#captchaData').input(result)
+        # 点击登录按钮
+        self.page.ele('#doLoginButton').click()
 
+
+    def fix_pos(self,key):
+        self.page.ele(".col-md-4 col-xs-4 col-sm-4 col-lg-4    no-pad-list list-more-label  sjx-sx-list-Box click-status").click()
+        if self.page.ele(".list-select-content").wait.display():
+            self.page.eles(".select-label select-label-desc-more")[7].after().click()
+            if self.page.ele("#deicingFlag").wait.display():
+                self.page.ele(".select-checked-show-t").after().click()
+                if self.page.ele(".list-select-content").wait.display():
+                    if key==0:
+                        self.page.eles(".select-label select-label-desc")[0].after().click()
+                    else:
+                        self.page.eles(".select-label select-label-desc")[1].after().click()
+    def narrow_wide(self,key):
+        self.page.ele("@name=typeCategory").click()
+        if self.page.ele(".list-select-content").wait.display():
+            if key==0:
+                self.page.eles(".select-label select-label-desc")[0].after().click()
+                self.page.eles(".select-label select-label-desc")[1].after().click()
+                self.page.eles(".select-label select-label-desc")[2].after().click()
+            else:
+                self.page.eles(".select-label select-label-desc")[3].after().click()
+                self.page.eles(".select-label select-label-desc")[4].after().click()
+    def get_result(self):
+        time.sleep(6)
+        data_list=self.page.ele("#warning-table-b").texts()
+        # 清理原始数据列表中的字符串
+        cleaned_data = [re.sub(r'\s+', ' ', item).strip() for item in data_list]
+        data=cleaned_data[0].split()
+        # 总数初始化计数器
+        count_all = 0
+        # 获取航班号到上站的列索引范围
+        start_index = data.index('航班号')
+        end_index = data.index('上站')+1
+        # 遍历每一行的数据
+        for i in data[start_index:end_index]:
+            # 尝试将元素转换为整数
+            try:
+                int_value = int(i)
+                count_all += 1
+            except ValueError:
+                pass
+        #待除冰
+        current_time = datetime.datetime.now()
+        # 初始化计数器
+        count = 0
+        timelist=self.page.eles(".datagrid-cell datagrid-cell-c5-dCldrDttm")
+        # 遍历列表中的每个元素
+        for t in timelist:
+            # 使用正则表达式进行匹配
+            t=t.text[-5:]
+            try:
+                hour=int(t[0:2])
+            except:
+                hour=0
+            try:
+                minute=int(t[3:])
+            except:
+                minute=0
+            # 构造日期对象，将当前时间的年、月、日与提取的小时和分钟组合
+            element_time = current_time.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+            # 计算当前时间与提取的时间之间的差值（以分钟为单位）
+            time_diff = (current_time - element_time).total_seconds() / 60
+
+            # 如果差值的绝对值小于等于10，则将计数器加1
+            if abs(time_diff) <= 10:
+                count += 1
+        return count_all,count
+    def main(self):
+        url='https://acdm.bcia.com.cn/login.do'
+        self.page.get(url)
+        self.login()
+        while True:
+            if self.page.ele('航班动态'):
+                break
+            elif self.page.ele('#userInput'):
+                self.login()
+            else:
+                pass
+        line={}
+        while True:
+            if self.page.ele('航班动态'):
+                self.page.ele('监控预警').click()
+                if self.page.ele("#datagrid-row-r1-1-0"):
+                    #进出港
+                    self.page.ele("@name=aord").click()
+                    if self.page.ele(".list-select-content").wait.display():
+                        self.page.eles(".select-label select-label-desc")[2].after().click()
+                    #CA
+                    self.page.ele(".list-input-serach index-value list-input-serach-s toUp").input('CA') 
+                    #标记除冰航班 定点0；机位1
+                    self.fix_pos(0)
+                    #款窄体 窄体0；宽体1
+                    self.narrow_wide(0)
+                    self.page.ele("#list-search-btn-c").click()
+                    line['fix_narrow']=self.get_result()
+                    break
+            else:
+                continue
+        self.page.refresh()
+        while True:
+            if self.page.ele('航班动态'):
+                self.page.ele('监控预警').click()
+                if self.page.ele("#datagrid-row-r1-1-0"):
+                    #进出港
+                    self.page.ele("@name=aord").click()
+                    if self.page.ele(".list-select-content").wait.display():
+                        self.page.eles(".select-label select-label-desc")[2].after().click()
+                    #CA
+                    self.page.ele(".list-input-serach index-value list-input-serach-s toUp").input('CA') 
+                    #标记除冰航班 定点0；机位1
+                    self.fix_pos(0)
+                    #款窄体 窄体0；宽体1
+                    self.narrow_wide(1)
+                    self.page.ele("#list-search-btn-c").click()
+                    line['fix_wide']=self.get_result()
+                    break
+            else:
+                continue
+        self.page.refresh()
+        while True:
+            if self.page.ele('航班动态'):
+                self.page.ele('监控预警').click()
+                if self.page.ele("#datagrid-row-r1-1-0"):
+                    #进出港
+                    self.page.ele("@name=aord").click()
+                    if self.page.ele(".list-select-content").wait.display():
+                        self.page.eles(".select-label select-label-desc")[2].after().click()
+                    #CA
+                    self.page.ele(".list-input-serach index-value list-input-serach-s toUp").input('CA') 
+                    #标记除冰航班 定点0；机位1
+                    self.fix_pos(1)
+                    #款窄体 窄体0；宽体1
+                    self.narrow_wide(0)
+                    self.page.ele("#list-search-btn-c").click()
+                    line['pos_narrow']=self.get_result()
+                    break
+            else:
+                continue
+        self.page.refresh()
+        while True:
+            if self.page.ele('航班动态'):
+                self.page.ele('监控预警').click()
+                if self.page.ele("#datagrid-row-r1-1-0"):
+                    #进出港
+                    self.page.ele("@name=aord").click()
+                    if self.page.ele(".list-select-content").wait.display():
+                        self.page.eles(".select-label select-label-desc")[2].after().click()
+                    #CA
+                    self.page.ele(".list-input-serach index-value list-input-serach-s toUp").input('CA') 
+                    #标记除冰航班 定点0；机位1
+                    self.fix_pos(1)
+                    #款窄体 窄体0；宽体1
+                    self.narrow_wide(1)
+                    self.page.ele("#list-search-btn-c").click()
+                    line['pos_wide']=self.get_result()
+                    break
+            else:
+                continue
+        # 获取当前时间的小时部分
+        current_hour = datetime.datetime.now().hour
+        data=line
+        # 构建句子
+        sentence = "截至{}点，首都机场国航已完成除霜{}架，其中宽体{}架，窄体{}架，后续XX架待除。".format(
+            current_hour,
+            data['fix_narrow'][0]+data['fix_wide'][0]+data['pos_narrow'][0]+data['pos_wide'][0],
+            data['fix_wide'][0]+data['pos_wide'][0],
+            data['fix_narrow'][0]+data['pos_narrow'][0]
+        )
+        self.page.quit()
+        return line,sentence
 #etops检测
 class EtopsChecker:
     def __init__(self, date,st):
@@ -239,6 +437,14 @@ if sidebar == "监控系统告警处理":
                 st.write(outline_)
         else:
             st.write('未检测到需要处理的文件')
+    st.write("-------------------------------------------------------------------------")
+    if st.button('除冰'):
+        with st.spinner('正在处理数据，请稍等...'):
+            ant=antice()
+            anti_results,sentence=ant.main()
+            df = pd.DataFrame.from_dict(anti_results, orient='index', columns=['num', 'undo'])
+            st.dataframe(df)
+            st.write(sentence)
     st.write("-------------------------------------------------------------------------")
     left_column, right_column = st.columns(2)
     with left_column:
