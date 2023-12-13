@@ -442,14 +442,8 @@ if sidebar == "监控系统告警处理":
                 st.write(outline_)
         else:
             st.write('未检测到需要处理的文件')
-    st.write("-------------------------------------------------------------------------")
-    if st.button('除冰'):
-        with st.spinner('正在处理数据，请稍等...'):
-            ant=antice()
-            anti_results,sentence=ant.main()
-            df = pd.DataFrame.from_dict(anti_results, orient='index', columns=['num', 'undo'])
-            st.dataframe(df)
-            st.write(sentence)
+
+
     st.write("-------------------------------------------------------------------------")
     left_column, right_column = st.columns(2)
     with left_column:
