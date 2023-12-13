@@ -120,9 +120,10 @@ class analyze:
 class antice:
     def __init__(self):
         self.iniaddr=os.path.abspath(r'configs.ini')
-        self.do = ChromiumOptions(ini_path=self.iniaddr)
-        self.so = SessionOptions(ini_path=self.iniaddr)
-        self.page = WebPage(driver_or_options=self.do, session_or_options=self.so)
+        self.chromeaddr=os.path.abspath(r'chrome.exe')
+        self.do = ChromiumOptions(read_file=False).set_paths(local_port='9888',
+                                                browser_path=self.chromeaddr)
+        self.page = WebPage(driver_or_options=do, session_or_options=False)
         self.imgaddr=os.path.abspath(r'验证码/img.png')
         
     
