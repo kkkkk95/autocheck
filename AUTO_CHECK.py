@@ -10,6 +10,7 @@ import datetime
 from DrissionPage import ChromiumOptions
 from ddddocr import DdddOcr
 from DrissionPage import WebPage, ChromiumOptions, SessionOptions
+import os
 
 # 设置网页标题，以及使用宽屏模式
 st.set_page_config(
@@ -118,9 +119,12 @@ class analyze:
 #除冰
 class antice:
     def __init__(self):
-        self.do = ChromiumOptions(ini_path=r'.\configs.ini')
-        self.so = SessionOptions(ini_path=r'.\configs.ini')
+        self.iniaddr=os.path.abspath(r'configs.ini')
+        self.do = ChromiumOptions(ini_path=self.iniaddr)
+        self.so = SessionOptions(ini_path=self.iniaddr)
         self.page = WebPage(driver_or_options=self.do, session_or_options=self.so)
+        self.imgaddr=os.path.abspath(r'验证码/img.png')
+        
     
     def login(self):
         # 登录
@@ -130,9 +134,9 @@ class antice:
         self.page.ele('#passwordInput').input('AOCdtjk2023')
         # 定位验证码图片
         img = self.page('tag:img').get_src()
-        with open (r'验证码\img.png', "wb") as f:
+        with open (self.imgaddr, "wb") as f:
             f.write(img)
-        with open(r'验证码\img.png', 'rb') as f:
+        with open(self.imgaddr, 'rb') as f:
             img_bytes = f.read()
             result = DdddOcr().classification(img_bytes)
         # 输入验证码
