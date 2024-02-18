@@ -53,7 +53,7 @@ class analyze:
     def outtime(self):
         self.warning_analyze()
         df_filtered = self.df[self.df['响应时间'] >= 300]
-        df_filtered = df_filtered[~((df_filtered['航班号'].str[:3] == 'CAO') | (df_filtered['航班号'].str[:4] == 'CCA0'))]
+        df_filtered = df_filtered[~((df_filtered['航班号'].str[:3] == 'CAO') | (df_filtered['航班号'].str[:4] == 'CCA0')| (df_filtered['航班号'].str[:3] == 'CCD'))]
         return df_filtered
     def outline(self):
         self.warning_analyze()
