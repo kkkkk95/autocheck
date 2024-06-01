@@ -38,6 +38,9 @@ if 'first_visit' not in st.session_state:
     st.balloons()
     st.etopsdate=datetime.datetime.now().strftime('%Y%m%d')+'-'+datetime.datetime.now().strftime('%Y%m%d')
     st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
+    st.valid_num=0
+    st.cnl_num=0
+    st.invalid_num=0
 #告警超时检测
 class analyze:
     def __init__(self,source_file):
@@ -599,7 +602,6 @@ if sidebar == "SIGMET":
     results=[]
     
     if st.button('数据上传', key="sigmetupload"):
-        n1=n2=n3=0
         if sigmet_file:
             with st.spinner('正在处理数据，请稍等...'):
                 sig2=sigmet(sigmet_file,'')
@@ -607,19 +609,18 @@ if sidebar == "SIGMET":
                 for d in sig2.dataall:
                     result=sig2.fenlei(d)[0]
                     results.append(result)
-                    #print(results)
                 for r in results:
                     if r=='取消报':
-                        n2=n2+1
+                        st.cnl_num=st.cnl_num+1
                         continue
                     elif '存在错误字符' in r:
-                        n3=n3+1
+                        st.invalid_num=st.invalid_num+1
                         continue
                     else:
-                        n1=n1+1
+                        st.valid_num=st.valid_num+1
                         st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([r], columns=st.sigmetdata.columns)])
                         continue
-                st.write('此数据有可用数据{}个，取消报{}个，错误数据{}个'.format(n1,n2,n3))
+                st.write('此数据有可用数据{}个，取消报{}个，错误数据{}个'.format(st.valid_num,st.cnl_num,st.invalid_num))
                 st.write(st.sigmetdata)
         else:
             st.write('未检测到需要处理的文件')
