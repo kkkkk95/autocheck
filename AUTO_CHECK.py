@@ -624,6 +624,7 @@ if sidebar == "SIGMET":
                 st.write(st.sigmetdata)
         else:
             st.write('未检测到需要处理的文件')
+    left_column,right_column=st.columns(2)
     with left_column:
         if st.button('清空数据', key="Delete"):
             st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
