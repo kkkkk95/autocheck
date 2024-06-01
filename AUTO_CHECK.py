@@ -29,13 +29,14 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 # 左边导航栏
 sidebar = st.sidebar.radio(
     "导航栏",
-    ("监控系统告警处理", "ETOPS检测")
+    ("监控系统告警处理", "ETOPS检测","SIGMET")
 )
 # 初始化全局配置
 if 'first_visit' not in st.session_state:
     st.session_state.first_visit=True
     st.balloons()
     st.etopsdate=datetime.datetime.now().strftime('%Y%m%d')+'-'+datetime.datetime.now().strftime('%Y%m%d')
+    st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
 #告警超时检测
 class analyze:
     def __init__(self,source_file):
@@ -421,6 +422,75 @@ class EtopsChecker:
             self.st.write('------该时间段内ETOPS天气发送正常------') 
 
 
+class sigmet:
+    def __init__(self,txt,sig):
+        self.txt=txt
+        self.sig=sig
+    def fanyi(self):
+        pass
+    def fenlei(self,sigmet_text):
+        parts = []
+        if 'CNL' in sigmet_text:
+            parts.append('取消报')
+        else:
+            # 使用正则表达式提取报文中的信息
+            try:
+                #地名代码
+                diming=re.findall(r'([A-Z]{4}(?=\sSIGMET))',sigmet_text)[0]
+                #情报区或管制区
+                fir=re.findall(r'[A-Z]{4}[-\s]+[A-Z]{4}\s+.*\s+FIR',sigmet_text)[0]
+                #天气现象描述
+                wx=re.findall(r'FIR\s(.*?)\s(?=OBS|FCST)',sigmet_text)[0]
+                #观测或预报的位置
+                p=re.findall(r'((OBS|FCST)(.*?)(?=SFC|FL|TOP|ABV|BLW)|CENTRE PSN.*)',sigmet_text)[0]
+                pos=p[0]+p[1]
+                if pos[-1]=='/':
+                    pos=pos[:pos.rfind(' ')]  # 找到最后一个空格的位置，并截取字符串
+                if pos[-1]=='=':
+                    pos=pos[:-1]  # 去除等于号
+                #高度
+                h=re.findall(r'(SFC|FL|TOP|ABV|BLW)(.*?)(?=MOV|STNR)',sigmet_text)
+                if h!=[]:
+                    h=h[0]
+                    height=h[0]+' '+h[1]
+                else:
+                    height='无高度信息'
+                #移动变化
+                m=re.findall(r'(MOV\s(.*?)\s(?=INTSF|WKN|NC)|STNR)',sigmet_text)
+                if m!=[]:
+                    m=m[0]
+                    move=m[0]+' '+m[1]
+                else:
+                    move='无移动信息'
+                
+                #强度变化
+                change=re.findall(r'(INTSF|WKN|NC)',sigmet_text)
+                if change!=[]:
+                    change=change[0]
+                else:
+                    change='无强度变化信息'
+                
+
+                parts.append([diming,fir,wx,pos,height,move,change,])
+            except:
+                parts.append(sigmet_text+'存在错误字符')
+        return parts
+    def to_data(self):
+        data = self.txt
+        # 获取文件内容的字节流
+        bytes_data = data.getvalue()
+
+        # 将字节流解码为字符串
+        data = bytes_data.decode("utf-8")
+
+        # 使用正则表达式找出所有符合条件的字符串
+        pattern = r'[A-Z]{4}\s+SIGMET\s*.*='
+        result = re.findall(pattern, data)
+        self.dataall=result
+        #取出txt中所有segmet报文
+
+
+
 if sidebar == "监控系统告警处理":
     st.header("监控系统告警")
     st.write("从国航监控系统导出告警信息管理EXCEL，上传它")
@@ -474,4 +544,48 @@ if sidebar == "ETOPS检测":
     left_column.image(r"image/step1.png")
     right_column.markdown("step2：复制粘贴指令'streamlit run AUTO_CHECK.py'")
     right_column.image(r"image/step2.png")
+
+if sidebar == "SIGMET":
+    st.header("SIGMET数据处理")
+    st.write("单一数据预览")
+    sigmet_input=st.text_input("请输入sigmet报文：")
+    if st.button('数据写入', key="sigmetwritein"):
+        if sigmet_input=='':
+            st.warning('数据为空')
+        else:
+            sig1=sigmet('',sigmet_input)
+            result=sig1.fenlei(sigmet_input)[0]
+            st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([result], columns=st.sigmetdata.columns)])
+            st.write(st.sigmetdata)
+    st.write("上传数据相关TXT")
+    sigmet_file = st.file_uploader("上传文件：", key="source_file")
+    results=[]
     
+    if st.button('数据上传', key="sigmetupload"):
+        n1=n2=n3=0
+        if sigmet_file:
+            with st.spinner('正在处理数据，请稍等...'):
+                sig2=sigmet(sigmet_file,'')
+                sig2.to_data()
+                print(sig2.dataall)
+                for d in sig2.dataall:
+                    result=sig2.fenlei(d)[0]
+                    results.append(result)
+                    #print(results)
+                for r in results:
+                    if r=='取消报':
+                        n2=n2+1
+                        continue
+                    elif '存在错误字符' in r:
+                        n3=n3+1
+                        continue
+                    else:
+                        n1=n1+1
+                        st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([r], columns=st.sigmetdata.columns)])
+                        continue
+                st.write('此数据有可用数据{}个，取消报{}个，错误数据{}个'.format(n1,n2,n3))
+                st.write(st.sigmetdata)
+        else:
+            st.write('未检测到需要处理的文件')
+    if st.button('清空数据', key="delete"):
+        st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
