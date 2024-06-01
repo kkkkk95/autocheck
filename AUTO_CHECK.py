@@ -11,6 +11,7 @@ from DrissionPage import ChromiumOptions
 from ddddocr import DdddOcr
 from DrissionPage import WebPage, ChromiumOptions, SessionOptions
 import os
+import base64
 
 # 设置网页标题，以及使用宽屏模式
 st.set_page_config(
@@ -489,6 +490,42 @@ class sigmet:
         self.dataall=result
         #取出txt中所有segmet报文
 
+def download_button(file_path, button_text):
+    with open(os.path.abspath(file_path), 'rb') as f:
+        bytes = f.read()
+        b64 = base64.b64encode(bytes).decode()
+
+    # 创建一个名为 "Download File" 的下载链接
+    href = f'<a href="data:application/octet-stream;base64,{b64}" download="{os.path.basename(file_path)}">{button_text}</a>'
+
+    # 在 Streamlit 应用程序中使用按钮链接
+    st.markdown(f'<div class="button-container">{href}</div>', unsafe_allow_html=True)
+
+    # 添加 CSS 样式以将链接样式化为按钮
+    st.markdown("""
+        <style>
+        .button-container {
+            display: inline-block;
+            margin-top: 1em;
+        }
+        .button-container a {
+            background-color: #0072C6;
+            border: none;
+            color: white;
+            padding: 0.5em 1em;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button-container a:hover {
+            background-color: #005AA3;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
 
 if sidebar == "监控系统告警处理":
@@ -589,3 +626,10 @@ if sidebar == "SIGMET":
             st.write('未检测到需要处理的文件')
     if st.button('清空数据', key="delete"):
         st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
+    left_column, right_column = st.columns(2)
+    with left_column:
+        if st.button('清空数据', key="delete"):
+            st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
+    with right_column:
+        st.sigmetdata.to_excel(os.path.abspath(r'data.xlsx', index=False)
+        download_button(os.path.abspath(r'data.xlsx'), '下载当前添加的所有数据')
