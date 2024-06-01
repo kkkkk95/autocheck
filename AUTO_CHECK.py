@@ -627,6 +627,9 @@ if sidebar == "SIGMET":
     left_column,right_column=st.columns(2)
     with left_column:
         if st.button('清空数据', key="Delete"):
+            st.valid_num=0
+            st.cnl_num=0
+            st.invalid_num=0
             st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
     with right_column:
         st.sigmetdata.to_excel(os.path.abspath(r'data.xlsx'), index=False)
