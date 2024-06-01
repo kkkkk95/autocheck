@@ -631,5 +631,5 @@ if sidebar == "SIGMET":
         if st.button('清空数据', key="delete"):
             st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
     with right_column:
-        st.sigmetdata.to_excel(os.path.abspath(r'data.xlsx', index=False)
+        st.sigmetdata.to_excel(os.path.abspath(r'data.xlsx'), index=False)
         download_button(os.path.abspath(r'data.xlsx'), '下载当前添加的所有数据')
