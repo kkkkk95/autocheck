@@ -604,7 +604,6 @@ if sidebar == "SIGMET":
             with st.spinner('正在处理数据，请稍等...'):
                 sig2=sigmet(sigmet_file,'')
                 sig2.to_data()
-                print(sig2.dataall)
                 for d in sig2.dataall:
                     result=sig2.fenlei(d)[0]
                     results.append(result)
