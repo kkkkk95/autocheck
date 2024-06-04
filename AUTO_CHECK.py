@@ -7,7 +7,6 @@ import time
 import sys
 import re
 import datetime
-from DrissionPage import ChromiumOptions
 from ddddocr import DdddOcr
 from DrissionPage import WebPage, ChromiumOptions, SessionOptions
 import os
