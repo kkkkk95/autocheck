@@ -425,9 +425,11 @@ class EtopsChecker:
 
 
 class sigmet:
-    def __init__(self,txt,sig):
-        self.txt=txt
+    def __init__(self,data,sig,type):
+        self.data=data
         self.sig=sig
+        self.type=type
+        self.new_df=pd.DataFrame(columns=['气象监视台', '情报区', '最低高度','最高高度', '移动', '强度趋势'])
     def fanyi(self):
         pass
     def fenlei(self,sigmet_text):
@@ -438,58 +440,152 @@ class sigmet:
             # 使用正则表达式提取报文中的信息
             try:
                 #地名代码
-                diming=re.findall(r'([A-Z]{4}(?=\sSIGMET))',sigmet_text)[0]
-                #情报区或管制区
-                fir=re.findall(r'[A-Z]{4}[-\s]+[A-Z]{4}\s+.*\s+FIR',sigmet_text)[0]
-                #天气现象描述
-                wx=re.findall(r'FIR\s(.*?)\s(?=OBS|FCST)',sigmet_text)[0]
-                #观测或预报的位置
-                p=re.findall(r'((OBS|FCST)(.*?)(?=SFC|FL|TOP|ABV|BLW)|CENTRE PSN.*)',sigmet_text)[0]
-                pos=p[0]+p[1]
-                if pos[-1]=='/':
-                    pos=pos[:pos.rfind(' ')]  # 找到最后一个空格的位置，并截取字符串
-                if pos[-1]=='=':
-                    pos=pos[:-1]  # 去除等于号
-                #高度
-                h=re.findall(r'(SFC|FL|TOP|ABV|BLW)(.*?)(?=MOV|STNR)',sigmet_text)
-                if h!=[]:
-                    h=h[0]
-                    height=h[0]+' '+h[1]
+                diming=re.findall(r'([A-Z]{4}(?=\sSIGMET))',sigmet_text)
+                if diming!=[]:
+                    diming=diming[0]
                 else:
-                    height='无高度信息'
+                    diming=None
+                #情报区或管制区
+                fir_pattern = r'([A-Z]{4})[-\s]+([A-Z]{4})\s+(.*\s+FIR)'
+                match = re.search(fir_pattern, sigmet_text)
+                if match:
+                    survwx = match.group(1)
+                    fir_code = match.group(2)
+                    fir_name=match.group(3)
+                #高度
+                height_high=height_low=None
+                # 匹配 "SFC/4000" 和 "SFC/3000" 格式
+                match = re.search(r'SFC/(\d+)', sigmet_text)
+                if match:
+                    height_low=0
+                    height_high=int(match.group(1))
+                # 匹配 "SFC/FL4000"格式
+                match = re.search(r'SFC/FL(\d+)', sigmet_text)
+                if match:
+                    height_low=0
+                    height_high=int(match.group(1))
+                
+                # 匹配 "SFC/FL4000" 和 "SFC/3000FT" 格式
+                match = re.search(r'SFC/FL(\d+)', sigmet_text)
+                if match:
+                    height_low=0
+                    height_high=int(match.group(1))
+                
+                # 匹配 "FL 180/290"、"FL 130/330"、"FL 300/400" 和 "FL 270/360" 格式
+                match = re.search(r'FL (\d+)/(\d+)', sigmet_text)
+                if match:
+                    height_low=int(match.group(1))
+                    height_high=int(match.group(2))
+                # 匹配 "FL180/290"格式
+                match = re.search(r'FL(\d+)/(\d+)', sigmet_text)
+                if match:
+                    height_low=int(match.group(1))
+                    height_high=int(match.group(2))
+                # 匹配 "TOP FL350" 格式
+                match = re.search(r'TOP FL(\d+)', sigmet_text)
+                if match:
+                    height_low=None
+                    height_high=int(match.group(1))
+
                 #移动变化
                 m=re.findall(r'(MOV\s(.*?)\s(?=INTSF|WKN|NC)|STNR)',sigmet_text)
                 if m!=[]:
                     m=m[0]
                     move=m[0]+' '+m[1]
                 else:
-                    move='无移动信息'
+                    move=None
                 
                 #强度变化
                 change=re.findall(r'(INTSF|WKN|NC)',sigmet_text)
                 if change!=[]:
                     change=change[0]
                 else:
-                    change='无强度变化信息'
+                    change=None
                 
-
-                parts.append([diming,fir,wx,pos,height,move,change,])
+                #txt格式（天气现象待修正）
+                if self.type==1:
+                    #天气现象描述
+                    wx=re.findall(r'FIR\s(.*?)\s(?=OBS|FCST)',sigmet_text)[0]
+                    #观测或预报的位置
+                    p=re.findall(r'((OBS|FCST)(.*?)(?=SFC|FL|TOP|ABV|BLW)|CENTRE PSN.*)',sigmet_text)[0]
+                    pos=p[0]+p[1]
+                    if pos[-1]=='/':
+                        pos=pos[:pos.rfind(' ')]  # 找到最后一个空格的位置，并截取字符串
+                    if pos[-1]=='=':
+                        pos=pos[:-1]  # 去除等于号
+                    parts.append([diming,fir_code,fir_name,wx,pos,height_low,height_high,move,change,])
+                else:
+                    return [survwx,fir_name,height_low,height_high,move,change,]
             except:
                 parts.append(sigmet_text+'存在错误字符')
         return parts
+    def anay(self):
+        #st.write(self.dataall)
+        for d in self.dataall:
+            d=str(d)
+            result=sig2.fenlei(d)[0]
+            results.append(result)
+        for r in results:
+            if r=='取消报':
+                st.cnl_num=st.cnl_num+1
+                continue
+            elif '存在错误字符' in r:
+                st.invalid_num=st.invalid_num+1
+                continue
+            else:
+                st.valid_num=st.valid_num+1
+                if type==1:
+                    st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([r], columns=st.sigmetdata.columns)])
+                else:
+                    st.sigmetdata = sig2.data
+                continue
     def to_data(self):
-        data = self.txt
-        # 获取文件内容的字节流
-        bytes_data = data.getvalue()
+        if self.type==1:
+            data = self.data
+            # 获取文件内容的字节流
+            bytes_data = data.getvalue()
 
-        # 将字节流解码为字符串
-        data = bytes_data.decode("utf-8")
+            # 将字节流解码为字符串
+            data = bytes_data.decode("utf-8")
 
-        # 使用正则表达式找出所有符合条件的字符串
-        pattern = r'[A-Z]{4}\s+SIGMET\s*.*='
-        result = re.findall(pattern, data)
-        self.dataall=result
-        #取出txt中所有segmet报文
+            # 使用正则表达式找出所有符合条件的字符串
+            pattern = r'[A-Z]{4}\s+SIGMET\s*.*='
+            result = re.findall(pattern, data)
+            #取出txt中所有segmet报文
+            self.dataall=result
+            self.anay()
+            st.write('此数据有可用数据{}个，取消报{}个，错误数据{}个'.format(st.valid_num,st.cnl_num,st.invalid_num))
+            st.write(st.sigmetdata)
+        #[fir_code,fir_name,height_low,height_high,move,change,]
+        elif self.type==2:
+            # 创建进度条
+            progress_bar = st.progress(0)
+            # 删除"cnl"列不为空的行
+            self.data = self.data[self.data['cnl'].isna()]
+            # 保留指定的列
+            self.data = self.data[['fir_code', 'msg_type', 'wphenomenon', 'start_time', 'raw_message', 'polygon_details']]
+            # 提取"polygon_details"列中的"polygonCore"数据
+            self.data['lat'] = self.data['polygon_details'].apply(lambda x: round(json.loads(x)[0]['polygonCore'][0], 2) if pd.notna(x) and isinstance(x, str) and len(json.loads(x)) > 0 else None)
+            self.data['lon'] = self.data['polygon_details'].apply(lambda x: round(json.loads(x)[0]['polygonCore'][1], 2) if pd.notna(x) and isinstance(x, str) and len(json.loads(x)) > 0 else None)
+            # 每行的数据处理
+            for index,row in self.data.iterrows():
+                sigmet_text=row['raw_message']
+                new_data=self.fenlei(sigmet_text)
+                if len(new_data)==6:
+                    new_row = pd.DataFrame({'地名代码': row['fir_code'], '气象监视台': new_data[0], '情报区': new_data[1], '报文类型': row['msg_type'], '天气现象': row['wphenomenon'], '开始时间': row['start_time'],
+                                            '纬度': row['lat'], '经度': row['lon'], '最低高度': new_data[2], '最高高度': new_data[3], '移动': new_data[4], '强度趋势': new_data[5], '原始报文': row['raw_message']}, index=[0])
+                
+                    st.sigmetdata_csv = pd.concat([st.sigmetdata_csv, new_row], ignore_index=True)
+                    # 更新进度条
+                    progress_bar.progress(min((index + 1) / len(self.data), 1))
+                else:
+                    continue
+            # 进度条完成
+            progress_bar.progress(100)
+            st.write(st.sigmetdata_csv)
+
+        else:
+            pass
 
 def download_button(file_path, button_text):
     with open(os.path.abspath(file_path), 'rb') as f:
@@ -595,31 +691,30 @@ if sidebar == "SIGMET":
             result=sig1.fenlei(sigmet_input)[0]
             st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([result], columns=st.sigmetdata.columns)])
             st.write(st.sigmetdata)
-    st.write("上传数据相关TXT")
+    st.write("上传数据相关TXT/CSV")
     sigmet_file = st.file_uploader("上传文件：", key="source_file")
+    
     results=[]
     
     if st.button('数据上传', key="sigmetupload"):
         if sigmet_file:
             with st.spinner('正在处理数据，请稍等...'):
-                sig2=sigmet(sigmet_file,'')
-                sig2.to_data()
-                for d in sig2.dataall:
-                    result=sig2.fenlei(d)[0]
-                    results.append(result)
-                for r in results:
-                    if r=='取消报':
-                        st.cnl_num=st.cnl_num+1
-                        continue
-                    elif '存在错误字符' in r:
-                        st.invalid_num=st.invalid_num+1
-                        continue
-                    else:
-                        st.valid_num=st.valid_num+1
-                        st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([r], columns=st.sigmetdata.columns)])
-                        continue
-                st.write('此数据有可用数据{}个，取消报{}个，错误数据{}个'.format(st.valid_num,st.cnl_num,st.invalid_num))
-                st.write(st.sigmetdata)
+                # 检测文件格式
+                if sigmet_file.name.endswith('.txt'):
+                    data = sigmet_file.getvalue().decode("utf-8")
+                    type=1
+                    sig2=sigmet(sigmet_file,'',type)
+                    sig2.to_data()
+                    
+                elif sigmet_file.name.endswith('.csv'):
+                    df = pd.read_csv(sigmet_file)
+                    sigmet_file=df
+                    type=2
+                    sig2=sigmet(sigmet_file,'',type)
+                    sig2.to_data()
+                else:
+                    st.warning('不支持的文件格式。请提供TXT或CSV文件。')
+                
         else:
             st.write('未检测到需要处理的文件')
     left_column,right_column=st.columns(2)
@@ -628,7 +723,14 @@ if sidebar == "SIGMET":
             st.valid_num=0
             st.cnl_num=0
             st.invalid_num=0
-            st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
+            st.sigmetdata=pd.DataFrame(columns=['地名代码','气象监视台', '情报区', '天气现象', '观测或预测的位置', '最低高度','最高高度', '移动', '强度趋势'])
+            st.sigmetdata_csv=pd.DataFrame(columns=['地名代码','气象监视台', '情报区','报文类型', '天气现象', '开始时间','纬度','经度','最低高度','最高高度', '移动', '强度趋势','原始报文'])
     with right_column:
-        st.sigmetdata.to_excel(os.path.abspath(r'data.xlsx'), index=False)
-        download_button(os.path.abspath(r'data.xlsx'), '下载当前添加的所有数据')
+        if st.sigmetdata is not None:
+            st.sigmetdata.to_excel(os.path.abspath(r'data.xlsx'), index=False)
+            download_button(os.path.abspath(r'data.xlsx'), '下载当前添加的所有数据')
+        elif st.sigmetdata_csv is not None:
+            st.sigmetdata_csv.to_excel(os.path.abspath(r'data.xlsx'), index=False)
+            download_button(os.path.abspath(r'data.xlsx'), '下载当前添加的所有数据')
+        else:
+            st.write('--waiting update--')
