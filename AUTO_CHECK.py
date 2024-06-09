@@ -35,7 +35,8 @@ if 'first_visit' not in st.session_state:
     st.session_state.first_visit=True
     st.balloons()
     st.etopsdate=datetime.datetime.now().strftime('%Y%m%d')+'-'+datetime.datetime.now().strftime('%Y%m%d')
-    st.sigmetdata=pd.DataFrame(columns=['地名代码', '情报区', '天气现象', '观测或预测的位置', '高度', '移动', '强度趋势'])
+    st.sigmetdata=pd.DataFrame(columns=['地名代码','气象监视台', '情报区', '天气现象', '观测或预测的位置', '最低高度','最高高度', '移动', '强度趋势'])
+    st.sigmetdata_csv=pd.DataFrame(columns=['地名代码','气象监视台', '情报区','报文类型', '天气现象', '开始时间','纬度','经度','最低高度','最高高度', '移动', '强度趋势','原始报文'])
     st.valid_num=0
     st.cnl_num=0
     st.invalid_num=0
