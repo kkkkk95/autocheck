@@ -539,6 +539,8 @@ class sigmet:
                 else:
                     st.sigmetdata = sig2.data
                 continue
+        
+
     def to_data(self):
         if self.type==1:
             data = self.data
