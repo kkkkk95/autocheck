@@ -453,6 +453,9 @@ class sigmet:
                     survwx = match.group(1)
                     fir_code = match.group(2)
                     fir_name=match.group(3)
+                    if len(fir_name)>=20:
+                        firname_pattern='([A-Z]{4,15}\s+FIR)'
+                        fir_name = re.search(firname_pattern, fir_name).group()
                 #高度
                 height_high=height_low=None
                 # 匹配 "SFC/4000" 和 "SFC/3000" 格式
