@@ -732,11 +732,7 @@ if sidebar == "SIGMET":
             st.sigmetdata=pd.DataFrame(columns=['地名代码','气象监视台', '情报区', '天气现象', '观测或预测的位置', '最低高度','最高高度', '移动', '强度趋势'])
             st.sigmetdata_csv=pd.DataFrame(columns=['地名代码','气象监视台', '情报区','报文类型', '天气现象', '开始时间','纬度','经度','最低高度','最高高度', '移动', '强度趋势','原始报文'])
     with right_column:
-        if st.sigmetdata is not None:
-            st.sigmetdata.to_excel(os.path.abspath(r'data.xlsx'), index=False)
-            download_button(os.path.abspath(r'data.xlsx'), '下载当前添加的所有数据')
-        elif st.sigmetdata_csv is not None:
-            st.sigmetdata_csv.to_excel(os.path.abspath(r'data.xlsx'), index=False)
-            download_button(os.path.abspath(r'data.xlsx'), '下载当前添加的所有数据')
-        else:
-            st.write('--waiting update--')
+        st.sigmetdata.to_excel(os.path.abspath(r'datatxt.xlsx'), index=False)
+        download_button(os.path.abspath(r'datatxt.xlsx'), '下载数据(txt)')
+        st.sigmetdata_csv.to_excel(os.path.abspath(r'datacsv.xlsx'), index=False)
+        download_button(os.path.abspath(r'datacsv.xlsx'), '下载数据(csv)')
