@@ -693,7 +693,7 @@ if sidebar == "SIGMET":
         if sigmet_input=='':
             st.warning('数据为空')
         else:
-            sig1=sigmet('',sigmet_input)
+            sig1=sigmet('',sigmet_input,3)
             result=sig1.fenlei(sigmet_input)[0]
             st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([result], columns=st.sigmetdata.columns)])
             st.write(st.sigmetdata)
