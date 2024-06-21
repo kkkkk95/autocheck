@@ -569,7 +569,7 @@ class sigmet:
             # 删除"cnl"列不为空的行
             self.data = self.data[self.data['cnl'].isna()]
             # 保留指定的列
-            self.data = self.data[['fir_code', 'msg_type', 'wphenomenon', 'start_time', 'raw_message', 'polygon_details']]
+            self.data = self.data[['fir_code', 'msg_type', 'wphenomenon', 'start_time','expired_time', 'raw_message', 'polygon_details']]
             # 提取"polygon_details"列中的"polygonCore"数据
             self.data['lat'] = self.data['polygon_details'].apply(lambda x: round(json.loads(x)[0]['polygonCore'][0], 2) if pd.notna(x) and isinstance(x, str) and len(json.loads(x)) > 0 else None)
             self.data['lon'] = self.data['polygon_details'].apply(lambda x: round(json.loads(x)[0]['polygonCore'][1], 2) if pd.notna(x) and isinstance(x, str) and len(json.loads(x)) > 0 else None)
@@ -578,7 +578,7 @@ class sigmet:
                 sigmet_text=row['raw_message']
                 new_data=self.fenlei(sigmet_text)
                 if len(new_data)==6:
-                    new_row = pd.DataFrame({'地名代码': row['fir_code'], '气象监视台': new_data[0], '情报区': new_data[1], '报文类型': row['msg_type'], '天气现象': row['wphenomenon'], '开始时间': row['start_time'],
+                    new_row = pd.DataFrame({'地名代码': row['fir_code'], '气象监视台': new_data[0], '情报区': new_data[1], '报文类型': row['msg_type'], '天气现象': row['wphenomenon'], '开始时间': row['start_time'],'结束时间':row['expired_time'],
                                             '纬度': row['lat'], '经度': row['lon'], '最低高度': new_data[2], '最高高度': new_data[3], '移动': new_data[4], '强度趋势': new_data[5], '原始报文': row['raw_message']}, index=[0])
                 
                     st.sigmetdata_csv = pd.concat([st.sigmetdata_csv, new_row], ignore_index=True)
