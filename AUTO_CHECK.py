@@ -507,7 +507,7 @@ class sigmet:
                     change=None
                 
                 #txt格式（天气现象待修正）
-                if self.type==1:
+                if self.type==1 or self.type==3:
                     #天气现象描述
                     wx=re.findall(r'FIR\s(.*?)\s(?=OBS|FCST)',sigmet_text)[0]
                     #观测或预报的位置
@@ -693,9 +693,19 @@ if sidebar == "SIGMET":
         if sigmet_input=='':
             st.warning('数据为空')
         else:
-            sig1=sigmet('',sigmet_input,3)
+            type=3
+            sig1=sigmet('',sigmet_input,type)
             result=sig1.fenlei(sigmet_input)[0]
-            st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([result], columns=st.sigmetdata.columns)])
+            if result=='取消报':
+                st.cnl_num=st.cnl_num+1
+                st.warning('此为取消报')
+            elif '存在错误字符' in result:
+                st.invalid_num=st.invalid_num+1
+                st.warning('文本中存在错误字符')
+            else:
+                st.valid_num=st.valid_num+1
+                st.sigmetdata = pd.concat([st.sigmetdata, pd.DataFrame([result], columns=st.sigmetdata.columns)])
+            
             st.write(st.sigmetdata)
     st.write("上传数据相关TXT/CSV")
     sigmet_file = st.file_uploader("上传文件：", key="source_file")
