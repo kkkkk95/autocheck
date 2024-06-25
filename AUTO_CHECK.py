@@ -745,7 +745,7 @@ if sidebar == "SIGMET":
             st.valid_num=0
             st.cnl_num=0
             st.invalid_num=0
-            st.sigmetdata=pd.DataFrame(columns=['地名代码','气象监视台', '情报区', '天气现象', '观测或预测的位置', '最低高度','最高高度', '移动', '强度趋势'])
+            st.sigmetdata=pd.DataFrame(columns=['地名代码','气象监视台', '情报区', '天气现象', '观测或预测的位置', '最低高度','最高高度', '移动', '强度趋势','开始时间','结束时间'])
             st.sigmetdata_csv=pd.DataFrame(columns=['地名代码','气象监视台', '情报区','报文类型', '天气现象', '开始时间','纬度','经度','最低高度','最高高度', '移动', '强度趋势','原始报文'])
     with right_column:
         st.sigmetdata.to_excel(os.path.abspath(r'datatxt.xlsx'), index=False)
