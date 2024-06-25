@@ -439,12 +439,6 @@ class sigmet:
         else:
             # 使用正则表达式提取报文中的信息
             try:
-                #地名代码
-                diming=re.findall(r'([A-Z]{4}(?=\sSIGMET))',sigmet_text)
-                if diming!=[]:
-                    diming=diming[0]
-                else:
-                    diming=None
                 # 有效时间
                 start = stop = None
                 validtime = re.findall(r"VALID\s(\d{6})/(\d{6})", sigmet_text)
@@ -515,15 +509,12 @@ class sigmet:
                 #txt格式（天气现象待修正）
                 if self.type==1 or self.type==3:
                     #天气现象描述
-                    wx=re.findall(r'FIR\s(.*?)\s(?=OBS|FCST)',sigmet_text)[0]
+                    wx=re.findall(r"(?:FIR/UIR|FIR|UIR|CTA)(?::\s|\s)(.*?)\s(?=OBS|FCST|CST|FC\sST|FCS\sT)",sigmet_text)
+                    wx = wx[0] if wx != [] else None
                     #观测或预报的位置
-                    p=re.findall(r'((OBS|FCST)(.*?)(?=SFC|FL|TOP|ABV|BLW)|CENTRE PSN.*)',sigmet_text)[0]
-                    pos=p[0]+p[1]
-                    if pos[-1]=='/':
-                        pos=pos[:pos.rfind(' ')]  # 找到最后一个空格的位置，并截取字符串
-                    if pos[-1]=='=':
-                        pos=pos[:-1]  # 去除等于号
-                    parts.append([diming,fir_code,fir_name,wx,pos,height_low,height_high,move,change,start,stop])
+                    pos=re.findall(r"(?:OBS|FCST|CST|FC\sST|FCS\sT)(?:.*?)(?=\s\S*?FT\S*?|SFC|FL|TOP|ABV|BLW|STNR|MOV|NC|=)",sigmet_text)
+                    pos = pos[0].strip() if pos !=[] else None
+                    parts.append([survwx,fir_code,fir_name,wx,pos,height_low,height_high,move,change,start,stop])
                 else:
                     return [survwx,fir_name,height_low,height_high,move,change,]
             except:
