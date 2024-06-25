@@ -35,7 +35,7 @@ if 'first_visit' not in st.session_state:
     st.session_state.first_visit=True
     st.balloons()
     st.etopsdate=datetime.datetime.now().strftime('%Y%m%d')+'-'+datetime.datetime.now().strftime('%Y%m%d')
-    st.sigmetdata=pd.DataFrame(columns=['地名代码','气象监视台', '情报区', '天气现象', '观测或预测的位置', '最低高度','最高高度', '移动', '强度趋势'])
+    st.sigmetdata=pd.DataFrame(columns=['地名代码','气象监视台', '情报区', '天气现象', '观测或预测的位置', '最低高度','最高高度', '移动', '强度趋势','开始时间','结束时间'])
     st.sigmetdata_csv=pd.DataFrame(columns=['地名代码','气象监视台', '情报区','报文类型', '天气现象', '开始时间','纬度','经度','最低高度','最高高度', '移动', '强度趋势','原始报文'])
     st.valid_num=0
     st.cnl_num=0
@@ -430,7 +430,6 @@ class sigmet:
         self.data=data
         self.sig=sig
         self.type=type
-        self.new_df=pd.DataFrame(columns=['气象监视台', '情报区', '最低高度','最高高度', '移动', '强度趋势'])
     def fanyi(self):
         pass
     def fenlei(self,sigmet_text):
@@ -446,6 +445,13 @@ class sigmet:
                     diming=diming[0]
                 else:
                     diming=None
+                # 有效时间
+                start = stop = None
+                validtime = re.findall(r"VALID\s(\d{6})/(\d{6})", sigmet_text)
+                if validtime != []:
+                    validtime = validtime[0]
+                    start = validtime[0]
+                    stop = validtime[1]
                 #情报区或管制区
                 fir_pattern = r'([A-Z]{4})[-\s]+([A-Z]{4})\s+(.*\s+FIR)'
                 match = re.search(fir_pattern, sigmet_text)
@@ -462,34 +468,34 @@ class sigmet:
                 match = re.search(r'SFC/(\d+)', sigmet_text)
                 if match:
                     height_low=0
-                    height_high=int(match.group(1))
+                    height_high=int(match.group(1))*100
                 # 匹配 "SFC/FL4000"格式
                 match = re.search(r'SFC/FL(\d+)', sigmet_text)
                 if match:
                     height_low=0
-                    height_high=int(match.group(1))
+                    height_high=int(match.group(1))*100
                 
                 # 匹配 "SFC/FL4000" 和 "SFC/3000FT" 格式
                 match = re.search(r'SFC/FL(\d+)', sigmet_text)
                 if match:
                     height_low=0
-                    height_high=int(match.group(1))
+                    height_high=int(match.group(1))*100
                 
                 # 匹配 "FL 180/290"、"FL 130/330"、"FL 300/400" 和 "FL 270/360" 格式
                 match = re.search(r'FL (\d+)/(\d+)', sigmet_text)
                 if match:
-                    height_low=int(match.group(1))
-                    height_high=int(match.group(2))
+                    height_low=int(match.group(1))*100
+                    height_high=int(match.group(2))*100
                 # 匹配 "FL180/290"格式
                 match = re.search(r'FL(\d+)/(\d+)', sigmet_text)
                 if match:
-                    height_low=int(match.group(1))
-                    height_high=int(match.group(2))
+                    height_low=int(match.group(1))*100
+                    height_high=int(match.group(2))*100
                 # 匹配 "TOP FL350" 格式
                 match = re.search(r'TOP FL(\d+)', sigmet_text)
                 if match:
                     height_low=None
-                    height_high=int(match.group(1))
+                    height_high=int(match.group(1))*100
 
                 #移动变化
                 m=re.findall(r'(MOV\s(.*?)\s(?=INTSF|WKN|NC)|STNR)',sigmet_text)
@@ -517,7 +523,7 @@ class sigmet:
                         pos=pos[:pos.rfind(' ')]  # 找到最后一个空格的位置，并截取字符串
                     if pos[-1]=='=':
                         pos=pos[:-1]  # 去除等于号
-                    parts.append([diming,fir_code,fir_name,wx,pos,height_low,height_high,move,change,])
+                    parts.append([diming,fir_code,fir_name,wx,pos,height_low,height_high,move,change,start,stop])
                 else:
                     return [survwx,fir_name,height_low,height_high,move,change,]
             except:
