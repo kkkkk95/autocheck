@@ -430,7 +430,7 @@ class sigmet:
         self.data=data
         self.sig=sig
         self.type=type
-        self.new_df=pd.DataFrame(columns=['气象监视台', '情报区', '最低高度','最高高度', '移动', '强度趋势'])
+        self.new_df=pd.DataFrame(columns=['开始时间','结束时间','情报区','气象监视台', '情报区全称','天气现象','位置','高度信息', '最低高度','最高高度', '移动', '强度趋势'])
     def fanyi(self):
         pass
     def fenlei(self,sigmet_text):
@@ -440,22 +440,23 @@ class sigmet:
         else:
             # 使用正则表达式提取报文中的信息
             try:
-                #地名代码
-                diming=re.findall(r'([A-Z]{4}(?=\sSIGMET))',sigmet_text)
-                if diming!=[]:
-                    diming=diming[0]
-                else:
-                    diming=None
+                # 有效时间
+                start = stop = None
+                validtime = re.findall(r"VALID\s(\d{6})/(\d{6})", sigmet_text)
+                if validtime != []:
+                    validtime = validtime[0]
+                    start = validtime[0]
+                    stop = validtime[1]
                 #情报区或管制区
-                fir_pattern = r'([A-Z]{4})[-\s]+([A-Z]{4})\s+(.*\s+FIR)'
+                fir_pattern = r"([A-Z]{4})[-\s]+([A-Z]{0,4})\s+(.*\s)+(?:FIR/UIR|FIR|UIR|CTA)"
                 match = re.search(fir_pattern, sigmet_text)
                 if match:
                     survwx = match.group(1)
                     fir_code = match.group(2)
                     fir_name=match.group(3)
-                    if len(fir_name)>=20:
-                        firname_pattern='([A-Z]{4,15}\s+FIR)'
-                        fir_name = re.search(firname_pattern, fir_name).group()
+                 # 高度字符串
+                h = re.findall(r"(SFC|FL|TOP|ABV|BLW)(.*?)(?=MOV|ST|MO V|=)", sigmet_text)
+                h = h[0] if h !=[] else None
                 #高度
                 height_high=height_low=None
                 # 匹配 "SFC/4000" 和 "SFC/3000" 格式
@@ -463,62 +464,54 @@ class sigmet:
                 if match:
                     height_low=0
                     height_high=int(match.group(1))
-                # 匹配 "SFC/FL4000"格式
+                # 匹配 "SFC/FL40"格式
                 match = re.search(r'SFC/FL(\d+)', sigmet_text)
                 if match:
                     height_low=0
-                    height_high=int(match.group(1))
+                    height_high=int(match.group(1))*100
                 
-                # 匹配 "SFC/FL4000" 和 "SFC/3000FT" 格式
+                # 匹配 "SFC/FL40" 和 "SFC/3000FT" 格式
                 match = re.search(r'SFC/FL(\d+)', sigmet_text)
                 if match:
                     height_low=0
-                    height_high=int(match.group(1))
+                    height_high=int(match.group(1))*100
                 
                 # 匹配 "FL 180/290"、"FL 130/330"、"FL 300/400" 和 "FL 270/360" 格式
                 match = re.search(r'FL (\d+)/(\d+)', sigmet_text)
                 if match:
-                    height_low=int(match.group(1))
-                    height_high=int(match.group(2))
+                    height_low=int(match.group(1))*100
+                    height_high=int(match.group(2))*100
                 # 匹配 "FL180/290"格式
                 match = re.search(r'FL(\d+)/(\d+)', sigmet_text)
                 if match:
-                    height_low=int(match.group(1))
-                    height_high=int(match.group(2))
+                    height_low=int(match.group(1))*100
+                    height_high=int(match.group(2))*100
                 # 匹配 "TOP FL350" 格式
                 match = re.search(r'TOP FL(\d+)', sigmet_text)
                 if match:
                     height_low=None
-                    height_high=int(match.group(1))
+                    height_high=int(match.group(1))*100
 
                 #移动变化
-                m=re.findall(r'(MOV\s(.*?)\s(?=INTSF|WKN|NC)|STNR)',sigmet_text)
-                if m!=[]:
-                    m=m[0]
-                    move=m[0]+' '+m[1]
-                else:
-                    move=None
+                move=re.findall(r"((?:MOV|MO V)\s(?:.*?)\s(?=INTSF|WKN|NC)|STNR)",sigmet_text)
+                move = move[0] if move !=[] else None
                 
                 #强度变化
                 change=re.findall(r'(INTSF|WKN|NC)',sigmet_text)
-                if change!=[]:
-                    change=change[0]
-                else:
-                    change=None
-                
+                change = change[0] if change !=[] else None
+
                 #txt格式（天气现象待修正）
                 if self.type==1 or self.type==3:
                     #天气现象描述
-                    wx=re.findall(r'FIR\s(.*?)\s(?=OBS|FCST)',sigmet_text)[0]
+                    wx=re.findall(r"(?:FIR/UIR|FIR|UIR|CTA)(?::\s|\s)(.*?)\s(?=OBS|FCST|CST|FC\sST|FCS\sT)",sigmet_text)
+                    wx = wx[0] if wx != [] else None
                     #观测或预报的位置
-                    p=re.findall(r'((OBS|FCST)(.*?)(?=SFC|FL|TOP|ABV|BLW)|CENTRE PSN.*)',sigmet_text)[0]
-                    pos=p[0]+p[1]
-                    if pos[-1]=='/':
-                        pos=pos[:pos.rfind(' ')]  # 找到最后一个空格的位置，并截取字符串
-                    if pos[-1]=='=':
-                        pos=pos[:-1]  # 去除等于号
-                    parts.append([diming,fir_code,fir_name,wx,pos,height_low,height_high,move,change,])
+                    pos=re.findall(r"(?:OBS|FCST|CST|FC\sST|FCS\sT)(?:.*?)(?=\s\S*?FT\S*?|SFC|FL|TOP|ABV|BLW|STNR|MOV|NC|=)",sigmet_text)
+                    pos = pos[0].strip() if pos !=[] else None
+                    """增加了一部分输出 start stop h, 修改了很多正则表达式"""
+                    parts.append([start,stop,survwx,fir_code,fir_name,wx,pos,h,height_low,height_high,move,change,])
                 else:
+                    """为啥这部分短呢??"""
                     return [survwx,fir_name,height_low,height_high,move,change,]
             except:
                 parts.append(sigmet_text+'存在错误字符')
