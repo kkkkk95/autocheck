@@ -495,7 +495,7 @@ class sigmet:
                 m=re.findall(r'(MOV\s(.*?)\s(?=INTSF|WKN|NC)|STNR)',sigmet_text)
                 if m!=[]:
                     m=m[0]
-                    move=m[0]+' '+m[1]
+                    move=m[0]
                 else:
                     move=None
                 
